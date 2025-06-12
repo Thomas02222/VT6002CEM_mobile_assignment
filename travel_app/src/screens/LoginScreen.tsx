@@ -12,7 +12,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import { loginStyles } from "../styles/login";
+import { loginStyles } from "../styles/login.js";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
 
@@ -33,6 +33,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     try {
       await login(email, password);
       Alert.alert("sucess", "sucessfully login");
+      navigation.replace("Home")
     } catch (error: any) {
       Alert.alert("login fail", error.message);
     }
