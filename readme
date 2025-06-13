@@ -1,0 +1,5 @@
+// 1. start server
+// node server.js
+
+// 2. start expo
+// npx expo start 

@@ -2,4 +2,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Home: undefined;
+  Search: undefined;
+  Tabs: undefined;
+  PlaceDetail: { location_id: string };
 };

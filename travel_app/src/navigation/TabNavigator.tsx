@@ -1,7 +1,9 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/HomeScreen";
+import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 // import ProfileScreen from "../screens/ProfileScreen";
+import SearchScreen from "../screens/SearchScreen";
 import { Ionicons } from "@expo/vector-icons";
 
 const Tab = createBottomTabNavigator();
@@ -15,11 +17,11 @@ const TabNavigator = () => {
           let iconName: keyof typeof Ionicons.glyphMap;
 
           if (route.name === "Home") {
-            iconName = "home-outline"; 
+            iconName = "home-outline";
           } else if (route.name === "Profile") {
-            iconName = "person-outline"; 
+            iconName = "person-outline";
           } else {
-            iconName = "help-circle-outline"; 
+            iconName = "help-circle-outline";
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -27,6 +29,7 @@ const TabNavigator = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Search" component={SearchScreen} />
       {/* <Tab.Screen name="Profile" component={ProfileScreen} /> */}
     </Tab.Navigator>
   );
