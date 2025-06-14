@@ -3,6 +3,8 @@ export type RootStackParamList = {
   Register: undefined;
   Home: undefined;
   Search: undefined;
-  Tabs: undefined;
+  Tabs: { screen: string } | undefined;
   PlaceDetail: { location_id: string };
+  MyTrips: undefined;
+  TripEditor: { tripId?: string | undefined };
 };

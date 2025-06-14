@@ -33,7 +33,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     try {
       await login(email, password);
       Alert.alert("sucess", "sucessfully login");
-      navigation.navigate("Home")
+      navigation.navigate("Tabs", { screen: "Home" }); 
     } catch (error: any) {
       Alert.alert("login fail", error.message);
     }

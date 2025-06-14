@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import TabNavigator from "./TabNavigator";
 import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import { RootStackParamList } from "../types/navigation";
+import TripEditorScreen from "../screens/TripEditorScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -19,6 +20,11 @@ const MainStackNavigator = () => {
         name="PlaceDetail"
         component={PlaceDetailScreen}
         options={{ title: "Attraction Detail" }}
+      />
+      <Stack.Screen
+        name="TripEditor"
+        component={TripEditorScreen}
+        options={{ title: "Edit Trip" }}
       />
     </Stack.Navigator>
   );
