@@ -187,10 +187,18 @@ export const tripEditorStyles = StyleSheet.create({
   // Section Cards
   sectionCard: {
     backgroundColor: colors.cardBackground,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-    ...shadows.sm,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -409,5 +417,50 @@ export const tripEditorStyles = StyleSheet.create({
   fadeOut: {
     opacity: 0.5,
   },
+
+  mapContainer: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginHorizontal: 16,
+    marginVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+
+
+  mapToggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+
+  mapToggleText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  }
 });
 
