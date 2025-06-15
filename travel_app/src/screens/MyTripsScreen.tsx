@@ -16,25 +16,26 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "../styles/myTrips";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
+import { getDatabase, ref, onValue } from "firebase/database";
+import { useAuth } from "../context/AuthContext"; 
+
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MyTrips">;
 
 interface Trip {
   id: string;
   title: string;
-  startDate: string;
-  endDate: string;
   destinationCount: number;
   imageUrl?: string;
-  status: "upcoming" | "ongoing" | "completed";
+  status: "upcoming";
 }
 
 const MyTripsScreen = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
-
   const navigation = useNavigation<NavigationProp>();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadTrips();
@@ -46,34 +47,37 @@ const MyTripsScreen = () => {
   }, []);
 
   const loadTrips = () => {
-    // Mock data, can be connected to backend later
-    setTrips([
-      {
-        id: "1",
-        title: "Japan Cherry Blossom",
-        startDate: "2025-06-01",
-        endDate: "2025-06-08",
-        destinationCount: 12,
-        status: "upcoming",
-      },
-      {
-        id: "2",
-        title: "Taichung Food Journey",
-        startDate: "2025-05-12",
-        endDate: "2025-05-13",
-        destinationCount: 8,
-        status: "completed",
-      },
-      {
-        id: "3",
-        title: "Hokkaido Winter Experience",
-        startDate: "2025-07-15",
-        endDate: "2025-07-22",
-        destinationCount: 15,
-        status: "upcoming",
-      },
-    ]);
+    const db = getDatabase();
+    const userId = user?.uid;
+
+    if (!userId) return;
+
+    const tripsRef = ref(db, `trips/${userId}`);
+
+    onValue(tripsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const determineStatus = (createdAt: string): Trip["status"] => {
+          return "upcoming";
+        };
+
+        const loadedTrips: Trip[] = Object.entries(data).map(
+          ([tripId, trip]: any) => ({
+            id: tripId,
+            title: trip.title || "Untitled Trip",
+            destinationCount: trip.places?.length || 0,
+            imageUrl: "",
+            status: determineStatus(trip.createdAt),
+          })
+        );
+
+        setTrips(loadedTrips);
+      } else {
+        setTrips([]);
+      }
+    });
   };
+  
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -88,12 +92,6 @@ const MyTripsScreen = () => {
     switch (status) {
       case "upcoming":
         return "#4CAF50";
-      case "ongoing":
-        return "#FF9800";
-      case "completed":
-        return "#9E9E9E";
-      default:
-        return "#2196F3";
     }
   };
 
@@ -101,26 +99,9 @@ const MyTripsScreen = () => {
     switch (status) {
       case "upcoming":
         return "Upcoming";
-      case "ongoing":
-        return "Ongoing";
-      case "completed":
-        return "Completed";
       default:
         return "";
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getMonth() + 1}/${date.getDate()}`;
-  };
-
-  const calculateDays = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
   };
 
   const handleDeleteTrip = (tripId: string, tripTitle: string) => {
@@ -151,7 +132,7 @@ const MyTripsScreen = () => {
   );
 
   const renderItem = ({ item, index }: { item: Trip; index: number }) => {
-    const days = calculateDays(item.startDate, item.endDate);
+ 
 
     return (
       <Animated.View
@@ -208,26 +189,6 @@ const MyTripsScreen = () => {
 
             <Text style={styles.tripTitle}>{item.title}</Text>
 
-            <View style={styles.tripInfo}>
-              <View style={styles.infoItem}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={16}
-                  color="rgba(255,255,255,0.8)"
-                />
-                <Text style={styles.tripDate}>
-                  {formatDate(item.startDate)} - {formatDate(item.endDate)}
-                </Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Ionicons
-                  name="time-outline"
-                  size={16}
-                  color="rgba(255,255,255,0.8)"
-                />
-                <Text style={styles.tripDuration}>{days} days</Text>
-              </View>
-            </View>
 
             <View style={styles.tripStats}>
               <View style={styles.statItem}>

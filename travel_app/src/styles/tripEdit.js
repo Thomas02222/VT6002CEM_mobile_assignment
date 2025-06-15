@@ -93,11 +93,10 @@ export const tripEditorStyles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.cardBackground,
-    textAlign: "center",
-    marginBottom: spacing.sm,
+    fontSize: 24,
+    fontWeight: "bold",
+    color: colors.textPrimary,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
@@ -411,3 +410,4 @@ export const tripEditorStyles = StyleSheet.create({
     opacity: 0.5,
   },
 });
+

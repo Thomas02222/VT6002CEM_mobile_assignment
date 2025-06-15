@@ -40,7 +40,9 @@ const TripEditorScreen: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
   const notesInputRef = useRef<TextInput>(null);
-
+  const [tripName, setTripName] = useState("My Awesome Trip");
+  const [tripNameFocused, setTripNameFocused] = useState(false);
+  
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -155,6 +157,7 @@ const TripEditorScreen: React.FC = () => {
       const newTrip = {
         userId: user?.uid || "guest",
         createdAt: new Date().toISOString(),
+        title: tripName.trim(),
         notes: notes.trim(),
         places: addedPlaces.map((p) => ({
           id: p.id,
@@ -166,7 +169,7 @@ const TripEditorScreen: React.FC = () => {
       };
 
       const tripRef = ref(db, `trips/${user?.uid}`);
-      await push(tripRef, newTrip); // push 會自動產生唯一 ID
+      await push(tripRef, newTrip); 
 
       Alert.alert("Trip Saved", "Your trip plan has been saved to Firebase!");
     } catch (error) {
@@ -288,11 +291,23 @@ const TripEditorScreen: React.FC = () => {
     >
       <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Trip Planner</Text>
-            <Text style={styles.subtitle}>Plan your perfect adventure</Text>
-          </View>
+        <View style={styles.headerContent}>
+          <TextInput
+            style={[
+              styles.title,
+              tripNameFocused && {
+                borderBottomWidth: 1,
+                borderBottomColor: colors.textLight,
+              },
+            ]}
+            value={tripName}
+            onChangeText={setTripName}
+            onFocus={() => setTripNameFocused(true)}
+            onBlur={() => setTripNameFocused(false)}
+            placeholder="Enter your trip name"
+            placeholderTextColor={colors.textTertiary}
+          />
+          <Text style={styles.subtitle}>Plan your perfect adventure</Text>
         </View>
 
         {/* Main Content */}
