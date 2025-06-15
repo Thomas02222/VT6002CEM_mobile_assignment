@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
@@ -15,6 +14,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { tripEditorStyles as styles, colors } from "../styles/tripEdit";
+import { db } from "../firebase/firebase";
+import { ref, push } from "firebase/database";
+import { useAuth } from "../context/AuthContext";
 
 interface Place {
   id: string;
@@ -23,69 +25,6 @@ interface Place {
   category?: string;
   notes?: string;
 }
-
-const mockPlaces: Place[] = [
-  {
-    id: "1",
-    name: "Tokyo Tower",
-    description: "Iconic 333m tall tower with city views",
-    category: "Landmark",
-  },
-  {
-    id: "2",
-    name: "Shinjuku Gyoen",
-    description: "Beautiful traditional Japanese garden",
-    category: "Nature",
-  },
-  {
-    id: "3",
-    name: "Fushimi Inari Shrine",
-    description: "Famous shrine with thousands of torii gates",
-    category: "Temple",
-  },
-  {
-    id: "4",
-    name: "Osaka Castle",
-    description: "Historic castle with museum and gardens",
-    category: "Castle",
-  },
-  {
-    id: "5",
-    name: "Nara Park",
-    description: "Park famous for free-roaming deer",
-    category: "Nature",
-  },
-  {
-    id: "6",
-    name: "Shibuya Crossing",
-    description: "World's busiest pedestrian crossing",
-    category: "Landmark",
-  },
-  {
-    id: "7",
-    name: "Kinkaku-ji",
-    description: "Golden Pavilion temple in Kyoto",
-    category: "Temple",
-  },
-  {
-    id: "8",
-    name: "Mount Fuji",
-    description: "Japan's highest mountain and sacred symbol",
-    category: "Nature",
-  },
-  {
-    id: "9",
-    name: "Tsukiji Outer Market",
-    description: "Famous fish market and food stalls",
-    category: "Food",
-  },
-  {
-    id: "10",
-    name: "Arashiyama Bamboo Grove",
-    description: "Magical bamboo forest walkway",
-    category: "Nature",
-  },
-];
 
 const TripEditorScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,7 +36,7 @@ const TripEditorScreen: React.FC = () => {
   const [notesFocused, setNotesFocused] = useState(false);
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState<string>("");
-
+  const { user } = useAuth();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const searchInputRef = useRef<TextInput>(null);
   const notesInputRef = useRef<TextInput>(null);
@@ -110,25 +49,37 @@ const TripEditorScreen: React.FC = () => {
     }).start();
   }, []);
 
-  const searchPlaces = useCallback((query: string) => {
+  const searchPlaces = useCallback(async (query: string) => {
     if (query.trim() === "") {
       setSearchResults([]);
       setIsSearching(false);
       return;
     }
 
-    setIsSearching(true);
-    setTimeout(() => {
-      const filtered = mockPlaces.filter(
-        (place) =>
-          place.name.toLowerCase().includes(query.toLowerCase()) ||
-          place.description?.toLowerCase().includes(query.toLowerCase()) ||
-          place.category?.toLowerCase().includes(query.toLowerCase())
+    try {
+      setIsSearching(true);
+
+      const res = await fetch(
+        `http://192.168.1.4:4000/search?q=${encodeURIComponent(query)}`
       );
-      setSearchResults(filtered);
+      const data = await res.json();
+
+      const places: Place[] = (data.data || []).map((item: any) => ({
+        id: item.location_id,
+        name: item.name,
+        description: item.address_obj?.address_string || "",
+        category: item.result_type || "Unknown",
+      }));
+
+      setSearchResults(places);
+    } catch (error) {
+      console.error("Search API failed", error);
+      Alert.alert("Search Error", "Failed to fetch search results.");
+    } finally {
       setIsSearching(false);
-    }, 500);
+    }
   }, []);
+  
 
   useEffect(() => {
     searchPlaces(searchQuery);
@@ -137,10 +88,7 @@ const TripEditorScreen: React.FC = () => {
   const addPlace = useCallback(
     (place: Place) => {
       if (addedPlaces.find((p) => p.id === place.id)) {
-        Alert.alert(
-          "Already Added",
-          `${place.name} is already in your trip!`
-        );
+        Alert.alert("Already Added", `${place.name} is already in your trip!`);
         return;
       }
       setAddedPlaces((prev) => [...prev, { ...place, notes: "" }]);
@@ -194,38 +142,38 @@ const TripEditorScreen: React.FC = () => {
     );
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (addedPlaces.length === 0) {
       Alert.alert(
         "No Places Added",
-        "Please add at least one place to your trip! "
+        "Please add at least one place to your trip!"
       );
       return;
     }
 
-    const placesWithNotes = addedPlaces.filter(
-      (place) => place.notes && place.notes.trim().length > 0
-    );
+    try {
+      const newTrip = {
+        userId: user?.uid || "guest",
+        createdAt: new Date().toISOString(),
+        notes: notes.trim(),
+        places: addedPlaces.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || "",
+          category: p.category || "",
+          notes: p.notes || "",
+        })),
+      };
 
-    Alert.alert(
-      "Trip Saved Successfully! ",
-      `Your amazing trip with ${addedPlaces.length} destination${
-        addedPlaces.length > 1 ? "s" : ""
-      } has been saved!${
-        placesWithNotes.length > 0
-          ? `\n\n ${placesWithNotes.length} place${
-              placesWithNotes.length > 1 ? "s have" : " has"
-            } personal notes!`
-          : ""
-      }${
-        notes.trim()
-          ? "\n\nYour general trip notes have been saved too! "
-          : ""
-      }`,
-      [{ text: "Awesome! ", style: "default" }]
-    );
-  }, [addedPlaces, notes]);
+      const tripRef = ref(db, `trips/${user?.uid}`);
+      await push(tripRef, newTrip); // push 會自動產生唯一 ID
 
+      Alert.alert("Trip Saved", "Your trip plan has been saved to Firebase!");
+    } catch (error) {
+      console.error("Firebase Save Error:", error);
+      Alert.alert("Save Failed", "There was an error saving your trip.");
+    }
+  }, [addedPlaces, notes, user]);
   const clearSearch = () => {
     setSearchQuery("");
     searchInputRef.current?.blur();
