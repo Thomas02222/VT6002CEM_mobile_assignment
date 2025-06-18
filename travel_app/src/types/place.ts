@@ -6,4 +6,5 @@ export interface Place {
   notes?: string;
   latitude?: number;
   longitude?: number;
+  hasCoordinates?: false;
 }

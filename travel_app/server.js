@@ -33,7 +33,7 @@ app.get("/search", async (req, res) => {
   }
 });
 
-// GET /detail?location_id=293919
+
 app.get("/detail", async (req, res) => {
   const location_id = req.query.location_id;
 

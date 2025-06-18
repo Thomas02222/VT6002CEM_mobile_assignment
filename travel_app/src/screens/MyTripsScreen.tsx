@@ -81,7 +81,6 @@ const MyTripsScreen = () => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    // Simulate API request
     setTimeout(() => {
       loadTrips();
       setRefreshing(false);

@@ -1,11 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Dimensions,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -26,8 +20,6 @@ interface MapComponentProps {
   style?: any;
 }
 
-const { width, height } = Dimensions.get("window");
-
 const MapComponent: React.FC<MapComponentProps> = ({
   locations = [],
   onLocationPress,
@@ -39,13 +31,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const mapRef = useRef<MapView>(null);
   const [mapRegion, setMapRegion] = useState<Region>(
     initialRegion || {
-      latitude: 25.033, 
+      latitude: 25.033,
       longitude: 121.5654,
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
     }
   );
-
 
   const fitToMarkers = () => {
     if (locations.length > 0 && mapRef.current) {
@@ -68,7 +59,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useEffect(() => {
     if (locations.length > 0) {
-
       setTimeout(() => {
         fitToMarkers();
       }, 1000);
