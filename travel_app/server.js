@@ -4,7 +4,8 @@ const cors = require("cors");
 
 const app = express();
 const PORT = 4000;
-const TRIPADVISOR_API_KEY = "1A96520AB2A54B51800370F864EACA66";
+const TRIPADVISOR_API_KEY = "8C7BE65C4688431C896BF8648616B5A8";
+const weather_API_KEY = "457b880d41e1ffa63e31e1611b16d65b";
 
 app.use(cors());
 
@@ -20,6 +21,7 @@ app.get("/search", async (req, res) => {
           key: TRIPADVISOR_API_KEY,
           language: "en",
           searchQuery: query,
+          category: "attractions",
         },
         headers: {
           accept: "application/json",
@@ -32,7 +34,6 @@ app.get("/search", async (req, res) => {
     res.status(500).json({ error: "TripAdvisor API fetch failed" });
   }
 });
-
 
 app.get("/detail", async (req, res) => {
   const location_id = req.query.location_id;
@@ -51,6 +52,7 @@ app.get("/detail", async (req, res) => {
           key: TRIPADVISOR_API_KEY,
           language: "en",
           currency: "HKD",
+          category: "attractions",
         },
       }
     );
@@ -58,6 +60,41 @@ app.get("/detail", async (req, res) => {
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).json({ error: "TripAdvisor API fetch failed" });
+  }
+});
+
+app.get("/weather", async (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) {
+    return res.status(400).json({ error: "Missing coordinates" });
+  }
+
+  try {
+    const response = await axios.get(
+      "https://api.openweathermap.org/data/2.5/weather",
+      {
+        params: {
+          lat,
+          lon,
+          appid: weather_API_KEY,
+          units: "metric",
+        },
+      }
+    );
+
+    const data = response.data;
+    res.json({
+      temperature: data.main.temp,
+      feelsLike: data.main.feels_like,
+      condition: data.weather[0].main,
+      humidity: data.main.humidity,
+      windSpeed: data.wind.speed,
+      icon: data.weather[0].main.toLowerCase(),
+      location: `${data.name}, ${data.sys.country}`,
+    });
+  } catch (error) {
+    console.error("OpenWeather error:", error.message);
+    res.status(500).json({ error: "Failed to fetch weather data" });
   }
 });
 

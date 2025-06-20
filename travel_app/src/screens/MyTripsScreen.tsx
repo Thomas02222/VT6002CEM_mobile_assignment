@@ -9,6 +9,9 @@ import {
   RefreshControl,
   Alert,
   Dimensions,
+  Share,
+  ActionSheetIOS,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,9 +19,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "../styles/myTrips";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
-import { getDatabase, ref, onValue } from "firebase/database";
-import { useAuth } from "../context/AuthContext"; 
-
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update,
+  ref as dbRef,
+} from "firebase/database";
+import { db } from "../firebase/firebase";
+import { useAuth } from "../context/AuthContext";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MyTrips">;
 
@@ -77,7 +86,6 @@ const MyTripsScreen = () => {
       }
     });
   };
-  
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -85,6 +93,11 @@ const MyTripsScreen = () => {
       loadTrips();
       setRefreshing(false);
     }, 1000);
+  };
+
+  const removeFromHomeScreen = (trip: Trip) => {
+    const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
+    update(tripRef, { isShared: null });
   };
 
   const getStatusColor = (status: Trip["status"]) => {
@@ -101,6 +114,84 @@ const MyTripsScreen = () => {
       default:
         return "";
     }
+  };
+
+  // 分享行程功能
+  const handleShareTrip = async (trip: Trip) => {
+    try {
+      const shareMessage = `Check out my trip: ${trip.title}\n${trip.destinationCount} amazing locations to explore!\n\nPlanned with TripApp 🌎✈️`;
+      const shareUrl = `https://yourapp.com/trip/${trip.id}`; // 替換為你的 app deep link
+
+      if (Platform.OS === "ios") {
+        // iOS ActionSheet 選項
+        const options = ["Copy Link", "Send to Home Screen", "Cancel"];
+
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options,
+            cancelButtonIndex: 3,
+            title: `Share "${trip.title}"`,
+            message: "Choose how you want to share this trip",
+          },
+          (buttonIndex) => {
+            switch (buttonIndex) {
+              case 0:
+                copyTripLink(shareUrl);
+                break;
+              case 1:
+                shareToHomeScreen(trip);
+                break;
+            }
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Share error:", error);
+      Alert.alert("Share Error", "Unable to share trip at this time.");
+    }
+  };
+
+  // 複製連結
+  const copyTripLink = (url: string) => {
+    // 這裡需要使用 Clipboard API
+    // import { Clipboard } from '@react-native-clipboard/clipboard';
+    // Clipboard.setString(url);
+    Alert.alert("Link Copied", "Trip link has been copied to clipboard!");
+  };
+
+  // 分享到主畫面 (建立快捷方式)
+  const shareToHomeScreen = (trip: Trip) => {
+    Alert.alert(
+      "Add to Home Screen",
+      `Create a shortcut for "${trip.title}" on your home screen?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Add Shortcut",
+          onPress: () => createHomeScreenShortcut(trip),
+        },
+      ]
+    );
+  };
+
+  // 建立主畫面快捷方式
+  const createHomeScreenShortcut = (trip: Trip) => {
+    if (!user?.uid) return;
+
+    console.log("Sharing trip:", trip.title);
+    const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
+
+    update(tripRef, { isShared: true })
+      .then(() => {
+        Alert.alert(
+          "Trip Shared",
+          `"${trip.title}" has been shared to Home screen!`
+        );
+      })
+      .catch((error) => {
+        console.error("Failed to share trip:", error);
+        Alert.alert("Error", "Unable to share trip to home screen.");
+      });
   };
 
   const handleDeleteTrip = (tripId: string, tripTitle: string) => {
@@ -131,8 +222,6 @@ const MyTripsScreen = () => {
   );
 
   const renderItem = ({ item, index }: { item: Trip; index: number }) => {
- 
-
     return (
       <Animated.View
         style={[
@@ -173,21 +262,35 @@ const MyTripsScreen = () => {
                   {getStatusText(item.status)}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteTrip(item.id, item.title)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons
-                  name="trash-outline"
-                  size={18}
-                  color="rgba(255,255,255,0.7)"
-                />
-              </TouchableOpacity>
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.shareButton}
+                  onPress={() => handleShareTrip(item)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={18}
+                    color="rgba(255,255,255,0.9)"
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteTrip(item.id, item.title)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color="rgba(255,255,255,0.7)"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Text style={styles.tripTitle}>{item.title}</Text>
-
 
             <View style={styles.tripStats}>
               <View style={styles.statItem}>

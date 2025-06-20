@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { db } from "../firebase/firebase";
-import { ref, push, set } from "firebase/database";
+import { ref, push, get, set } from "firebase/database";
 import { useAuth } from "../context/AuthContext";
 import PlaceSearchBar from "../component/PlaceSearchBar";
 import AddedPlaceList from "../component/AddedPlaceList";
@@ -17,39 +17,40 @@ import { tripEditorStyles as styles, colors } from "../styles/tripEdit";
 
 const TripEditorScreen = () => {
   const { user } = useAuth();
-  const [tripName, setTripName] = useState(""); // 新增行程名稱
-  const [tripId, setTripId] = useState<string | null>(null); // 編輯用（如需）
+  const [tripName, setTripName] = useState("");
+  const [tripId, setTripId] = useState<string | null>(null);
   const [addedPlaces, setAddedPlaces] = useState<Place[]>([]);
+
+  const [fetchedPlaceIds, setFetchedPlaceIds] = useState<Set<string>>(
+    new Set()
+  );
 
   const addPlace = async (place: Place) => {
     if (addedPlaces.find((p) => p.id === place.id)) return;
+    if (fetchedPlaceIds.has(place.id)) return;
 
-    // 只在加入時請求 detail
     try {
       const detailRes = await fetch(
         `http://192.168.1.4:4000/detail?location_id=${place.id}`
       );
       const detailData = await detailRes.json();
 
-      const lat =
-        parseFloat(
-          detailData.latitude ??
-            detailData.lat ??
-            detailData.geo_lat ??
-            detailData.location?.lat ??
-            ""
-        ) || undefined;
+      const lat = parseFloat(
+        detailData.latitude ??
+          detailData.lat ??
+          detailData.geo_lat ??
+          detailData.location?.lat ??
+          ""
+      );
+      const lng = parseFloat(
+        detailData.longitude ??
+          detailData.lng ??
+          detailData.geo_lng ??
+          detailData.location?.lng ??
+          ""
+      );
 
-      const lng =
-        parseFloat(
-          detailData.longitude ??
-            detailData.lng ??
-            detailData.geo_lng ??
-            detailData.location?.lng ??
-            ""
-        ) || undefined;
-
-      if (lat === undefined || lng === undefined || isNaN(lat) || isNaN(lng)) {
+      if (isNaN(lat) || isNaN(lng)) {
         Alert.alert("Missing Location", "This place has no location info.");
         return;
       }
@@ -63,6 +64,9 @@ const TripEditorScreen = () => {
           notes: "",
         },
       ]);
+
+ 
+      setFetchedPlaceIds((prev) => new Set(prev).add(place.id));
     } catch (err) {
       Alert.alert("Failed", "Unable to fetch place details.");
     }
@@ -86,8 +90,6 @@ const TripEditorScreen = () => {
     );
   };
 
-
-  
   const handleSave = useCallback(async () => {
     if (!tripName.trim()) {
       Alert.alert("Trip Name Missing", "Please enter a trip name.");
@@ -119,16 +121,29 @@ const TripEditorScreen = () => {
 
       if (tripId) {
         const tripRef = ref(db, `trips/${user?.uid}/${tripId}`);
-        await set(tripRef, tripData);
+        const oldSnapshot = await get(tripRef);
+        const oldTrip = oldSnapshot.val();
+        const isShared = oldTrip?.isShared ?? false;
+
+        await set(tripRef, {
+          ...tripData,
+          createdAt: oldTrip?.createdAt || new Date().toISOString(),
+          isShared,
+        });
+
         Alert.alert("Trip Updated", "Your trip has been updated.");
       } else {
         const newTripRef = push(baseRef);
         await set(newTripRef, {
           ...tripData,
           createdAt: new Date().toISOString(),
+          isShared: false,
         });
+
+        setTripId(newTripRef.key);
         Alert.alert("Trip Saved", "Your trip has been saved.");
       }
+      console.log(tripData);
     } catch (error) {
       console.error("Save error:", error);
       Alert.alert("Save Failed", "Unable to save trip.");

@@ -6,7 +6,6 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-
   travelHeader: {
     position: "absolute",
     top: 0,
@@ -50,12 +49,9 @@ export const homeStyles = StyleSheet.create({
     marginLeft: 16,
   },
 
-
   travelMainContent: {
     paddingHorizontal: 20,
-
   },
-
 
   travelSearchContainer: {
     marginBottom: 20,
@@ -71,7 +67,6 @@ export const homeStyles = StyleSheet.create({
     color: "#111827",
   },
 
-
   travelSectionTitle: {
     fontSize: 22,
     fontWeight: "700",
@@ -79,7 +74,6 @@ export const homeStyles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 20,
   },
-
 
   travelCategoriesContainer: {
     flexDirection: "row",
@@ -132,7 +126,6 @@ export const homeStyles = StyleSheet.create({
     color: "#6b7280",
     marginTop: 4,
   },
-
 
   travelPostCard: {
     backgroundColor: "#fff",
@@ -200,7 +193,7 @@ export const homeStyles = StyleSheet.create({
   travelPostInfoItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4, 
+    gap: 4,
   },
   travelPostInfoText: {
     marginLeft: 6,
@@ -208,11 +201,10 @@ export const homeStyles = StyleSheet.create({
     color: "#6b7280",
   },
 
-
   travelPostTags: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6, 
+    gap: 6,
     marginBottom: 12,
   },
   travelPostTag: {
@@ -269,5 +261,104 @@ export const homeStyles = StyleSheet.create({
     fontSize: 12,
     color: "#6b7280",
     marginTop: 2,
+  },
+
+  // Weather Card Styles
+  weatherCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  weatherHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  weatherLocation: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginLeft: 4,
+    fontWeight: "500",
+  },
+
+  weatherContent: {
+    gap: 16,
+  },
+
+  weatherMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  weatherIconTemp: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  weatherTemp: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#1f2937",
+  },
+
+  weatherDetails: {
+    alignItems: "flex-end",
+  },
+
+  weatherCondition: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1f2937",
+    marginBottom: 4,
+  },
+
+  weatherFeels: {
+    fontSize: 14,
+    color: "#6b7280",
+  },
+
+  weatherStats: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+  },
+
+  weatherStat: {
+    alignItems: "center",
+  },
+
+  weatherStatLabel: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginBottom: 4,
+  },
+
+  weatherStatValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1f2937",
+  },
+
+  weatherError: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 14,
+    paddingVertical: 20,
   },
 });

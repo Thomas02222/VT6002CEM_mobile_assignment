@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   Image,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import {
   Heart,
@@ -13,108 +14,131 @@ import {
   Users,
   Share2,
   Bookmark,
-  Search,
   Bell,
   User,
-} from "lucide-react-native"; 
-
-import { homeStyles } from "../styles/home"; 
+  Cloud,
+  Sun,
+  CloudRain,
+  Thermometer,
+} from "lucide-react-native";
+import { ref, get } from "firebase/database";
+import { db } from "../firebase/firebase";
+import { homeStyles } from "../styles/home";
 
 const TravelHomeScreen = () => {
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<number>>(
+  const [sharedTrips, setSharedTrips] = useState<any[]>([]);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(
     new Set()
   );
+  const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<any>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [location, setLocation] = useState("Taipei, Taiwan");
 
   const user = {
-    name: "Alice Chen",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+    name: "Guest",
+    avatar: "https://i.pravatar.cc/150?u=guest",
+  };
+
+  useEffect(() => {
+    const getWeather = async (lat: number, lon: number) => {
+      const res = await fetch(
+        `http://192.168.1.4:4000/weather?lat=${lat}&lon=${lon}`
+      );
+      const data = await res.json();
+      return data;
+    };
+
+    const fetchWeather = async () => {
+      try {
+        const data = await getWeather(25.03, 121.56); 
+        setWeather(data);
+      } catch (error) {
+        console.error("Fetch weather failed:", error);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    fetchWeather();
+  }, []);
+
+  const getWeatherIcon = (condition: string) => {
+    switch (condition) {
+      case "sunny":
+        return <Sun color="#FFA500" size={24} />;
+      case "cloudy":
+        return <Cloud color="#87CEEB" size={24} />;
+      case "rainy":
+        return <CloudRain color="#4682B4" size={24} />;
+      case "partly-cloudy":
+      default:
+        return <Cloud color="#87CEEB" size={24} />;
+    }
   };
 
 
-  const travelPosts = [
-    {
-      id: 1,
-      author: {
-        name: "Jason Wong",
-        avatar:
-          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      },
-      destination: "Kyoto, Japan",
-      title: "Cherry Blossom Adventure",
-      description:
-        "5-day cultural immersion with temple visits and traditional experiences",
-      image:
-        "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&h=300&fit=crop",
-      duration: "5 days",
-      budget: "NT$28,000",
-      likes: 124,
-      participants: 3,
-      tags: ["Cultural", "Nature", "Photography"],
-      timeAgo: "2 hours ago",
-    },
-    {
-      id: 2,
-      author: {
-        name: "Sarah Kim",
-        avatar:
-          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      },
-      destination: "Santorini, Greece",
-      title: "Sunset & Sea Escape",
-      description: "Romantic getaway with stunning sunsets and azure waters",
-      image:
-        "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&h=300&fit=crop",
-      duration: "7 days",
-      budget: "NT$45,000",
-      likes: 89,
-      participants: 2,
-      tags: ["Romantic", "Beach", "Luxury"],
-      timeAgo: "5 hours ago",
-    },
-    {
-      id: 3,
-      author: {
-        name: "Mike Chen",
-        avatar:
-          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      },
-      destination: "Banff, Canada",
-      title: "Mountain Hiking Expedition",
-      description:
-        "Adventure through Canadian Rockies with breathtaking landscapes",
-      image:
-        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
-      duration: "10 days",
-      budget: "NT$55,000",
-      likes: 156,
-      participants: 6,
-      tags: ["Adventure", "Hiking", "Nature"],
-      timeAgo: "1 day ago",
-    },
-  ];
+  useEffect(() => {
+    const fetchSharedTrips = async () => {
+      try {
+        const tripsRef = ref(db, "trips");
+        const snapshot = await get(tripsRef);
 
+        const results: any[] = [];
 
-  const handleLike = (postId: number) => {
-    const newLikedPosts = new Set(likedPosts);
-    if (newLikedPosts.has(postId)) {
-      newLikedPosts.delete(postId);
-    } else {
-      newLikedPosts.add(postId);
-    }
-    setLikedPosts(newLikedPosts);
+        if (snapshot.exists()) {
+          const allTrips = snapshot.val();
+          for (const userId in allTrips) {
+            for (const tripId in allTrips[userId]) {
+              const trip = allTrips[userId][tripId];
+              if (trip.isShared) {
+                results.push({
+                  id: tripId,
+                  ...trip,
+                  author: {
+                    name: userId,
+                    avatar: "https://i.pravatar.cc/100?u=" + userId,
+                  },
+                  timeAgo: "just now",
+                  destination: trip.title,
+                  title: trip.title,
+                  description:
+                    trip.places?.[0]?.description || "A shared trip plan.",
+                  image:
+                    "https://source.unsplash.com/400x300/?" +
+                    encodeURIComponent(trip.title),
+                  duration: `${trip.places?.length || 1} stops`,
+                  budget: "Flexible",
+                  participants: Math.floor(Math.random() * 5) + 1,
+                  tags: ["shared", "travel"],
+                  likes: Math.floor(Math.random() * 100),
+                });
+              }
+            }
+          }
+          setSharedTrips(results.reverse());
+        }
+      } catch (error) {
+        console.error("Failed to fetch shared trips:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSharedTrips();
+  }, []);
+
+  const handleLike = (postId: string) => {
+    const updated = new Set(likedPosts);
+    updated.has(postId) ? updated.delete(postId) : updated.add(postId);
+    setLikedPosts(updated);
   };
 
-
-  const handleBookmark = (postId: number) => {
-    const newBookmarkedPosts = new Set(bookmarkedPosts);
-    if (newBookmarkedPosts.has(postId)) {
-      newBookmarkedPosts.delete(postId);
-    } else {
-      newBookmarkedPosts.add(postId);
-    }
-    setBookmarkedPosts(newBookmarkedPosts);
+  const handleBookmark = (postId: string) => {
+    const updated = new Set(bookmarkedPosts);
+    updated.has(postId) ? updated.delete(postId) : updated.add(postId);
+    setBookmarkedPosts(updated);
   };
 
   return (
@@ -128,7 +152,7 @@ const TravelHomeScreen = () => {
               style={homeStyles.travelAvatar}
             />
             <View style={{ marginLeft: 12 }}>
-              <Text style={homeStyles.travelGreeting}>Hi, {user.name} </Text>
+              <Text style={homeStyles.travelGreeting}>Hi, {user.name}</Text>
               <Text style={homeStyles.travelSubGreeting}>
                 Ready for your next trip?
               </Text>
@@ -150,95 +174,166 @@ const TravelHomeScreen = () => {
         style={homeStyles.travelMainContent}
         contentContainerStyle={{ paddingTop: 80, paddingBottom: 80 }}
       >
-        {/* Travel Posts */}
-        <Text style={homeStyles.travelSectionTitle}>Latest Travel Plans</Text>
-        {travelPosts.map((post) => (
-          <View key={post.id} style={homeStyles.travelPostCard}>
-            <View style={homeStyles.travelPostHeader}>
-              <Image
-                source={{ uri: post.author.avatar }}
-                style={homeStyles.travelPostAvatar}
-              />
-              <View style={{ marginLeft: 10, flex: 1 }}>
-                <Text style={homeStyles.travelPostAuthor}>
-                  {post.author.name}
-                </Text>
-                <Text style={homeStyles.travelPostTime}>{post.timeAgo}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => handleBookmark(post.id)}
-                style={homeStyles.travelPostBookmark}
-              >
-                <Bookmark
-                  color={bookmarkedPosts.has(post.id) ? "#2563eb" : "#6b7280"}
-                  fill={bookmarkedPosts.has(post.id) ? "#2563eb" : "none"}
-                  size={20}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={homeStyles.travelPostDestination}>
-              {post.destination}
-            </Text>
-            <Text style={homeStyles.travelPostTitle}>{post.title}</Text>
-            <Text style={homeStyles.travelPostDescription}>
-              {post.description}
-            </Text>
-            <Image
-              source={{ uri: post.image }}
-              style={homeStyles.travelPostImage}
-            />
-
-            <View style={homeStyles.travelPostInfoRow}>
-              <View style={homeStyles.travelPostInfoItem}>
-                <Calendar color="#6b7280" size={16} />
-                <Text style={homeStyles.travelPostInfoText}>
-                  {post.duration}
-                </Text>
-              </View>
-              <View style={homeStyles.travelPostInfoItem}>
-                <MapPin color="#6b7280" size={16} />
-                <Text style={homeStyles.travelPostInfoText}>{post.budget}</Text>
-              </View>
-              <View style={homeStyles.travelPostInfoItem}>
-                <Users color="#6b7280" size={16} />
-                <Text style={homeStyles.travelPostInfoText}>
-                  {post.participants} participants
-                </Text>
-              </View>
-            </View>
-
-            {/* Tags */}
-            <View style={homeStyles.travelPostTags}>
-              {post.tags.map((tag) => (
-                <View key={tag} style={homeStyles.travelPostTag}>
-                  <Text style={homeStyles.travelPostTagText}>{tag}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Like & Share */}
-            <View style={homeStyles.travelPostActions}>
-              <TouchableOpacity
-                style={homeStyles.travelPostActionButton}
-                onPress={() => handleLike(post.id)}
-              >
-                <Heart
-                  color={likedPosts.has(post.id) ? "#ef4444" : "#6b7280"}
-                  fill={likedPosts.has(post.id) ? "#ef4444" : "none"}
-                  size={20}
-                />
-                <Text style={homeStyles.travelPostActionText}>
-                  {post.likes + (likedPosts.has(post.id) ? 1 : 0)}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={homeStyles.travelPostActionButton}>
-                <Share2 color="#6b7280" size={20} />
-                <Text style={homeStyles.travelPostActionText}>Share</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Weather Card */}
+        <View style={homeStyles.weatherCard}>
+          <View style={homeStyles.weatherHeader}>
+            <MapPin color="#6b7280" size={16} />
+            <Text style={homeStyles.weatherLocation}>{location}</Text>
           </View>
-        ))}
+
+          {weatherLoading ? (
+            <ActivityIndicator
+              size="small"
+              color="#2563eb"
+              style={{ marginVertical: 20 }}
+            />
+          ) : weather ? (
+            <View style={homeStyles.weatherContent}>
+              <View style={homeStyles.weatherMain}>
+                <View style={homeStyles.weatherIconTemp}>
+                  {getWeatherIcon(weather.icon)}
+                  <Text style={homeStyles.weatherTemp}>
+                    {weather.temperature}°C
+                  </Text>
+                </View>
+                <View style={homeStyles.weatherDetails}>
+                  <Text style={homeStyles.weatherCondition}>
+                    {weather.condition}
+                  </Text>
+                  <Text style={homeStyles.weatherFeels}>
+                    Feels like {weather.feelsLike}°C
+                  </Text>
+                </View>
+              </View>
+
+              <View style={homeStyles.weatherStats}>
+                <View style={homeStyles.weatherStat}>
+                  <Text style={homeStyles.weatherStatLabel}>Humidity</Text>
+                  <Text style={homeStyles.weatherStatValue}>
+                    {weather.humidity}%
+                  </Text>
+                </View>
+                <View style={homeStyles.weatherStat}>
+                  <Text style={homeStyles.weatherStatLabel}>Wind</Text>
+                  <Text style={homeStyles.weatherStatValue}>
+                    {weather.windSpeed} km/h
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <Text style={homeStyles.weatherError}>
+              Unable to load weather data
+            </Text>
+          )}
+        </View>
+
+        <Text style={homeStyles.travelSectionTitle}>Latest Travel Plans</Text>
+
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#2563eb"
+            style={{ marginTop: 30 }}
+          />
+        ) : sharedTrips.length === 0 ? (
+          <Text style={{ textAlign: "center", marginTop: 30 }}>
+            No shared trips found.
+          </Text>
+        ) : (
+          sharedTrips.map((post) => (
+            <View key={post.id} style={homeStyles.travelPostCard}>
+              {/* Post Header */}
+              <View style={homeStyles.travelPostHeader}>
+                <Image
+                  source={{ uri: post.author.avatar }}
+                  style={homeStyles.travelPostAvatar}
+                />
+                <View style={{ marginLeft: 10, flex: 1 }}>
+                  <Text style={homeStyles.travelPostAuthor}>
+                    {post.author.name}
+                  </Text>
+                  <Text style={homeStyles.travelPostTime}>{post.timeAgo}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleBookmark(post.id)}
+                  style={homeStyles.travelPostBookmark}
+                >
+                  <Bookmark
+                    color={bookmarkedPosts.has(post.id) ? "#2563eb" : "#6b7280"}
+                    fill={bookmarkedPosts.has(post.id) ? "#2563eb" : "none"}
+                    size={20}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Post Content */}
+              <Text style={homeStyles.travelPostDestination}>
+                {post.destination}
+              </Text>
+              <Text style={homeStyles.travelPostTitle}>{post.title}</Text>
+              <Text style={homeStyles.travelPostDescription}>
+                {post.description}
+              </Text>
+              <Image
+                source={{ uri: post.image }}
+                style={homeStyles.travelPostImage}
+              />
+
+              {/* Info Row */}
+              <View style={homeStyles.travelPostInfoRow}>
+                <View style={homeStyles.travelPostInfoItem}>
+                  <Calendar color="#6b7280" size={16} />
+                  <Text style={homeStyles.travelPostInfoText}>
+                    {post.duration}
+                  </Text>
+                </View>
+                <View style={homeStyles.travelPostInfoItem}>
+                  <MapPin color="#6b7280" size={16} />
+                  <Text style={homeStyles.travelPostInfoText}>
+                    {post.budget}
+                  </Text>
+                </View>
+                <View style={homeStyles.travelPostInfoItem}>
+                  <Users color="#6b7280" size={16} />
+                  <Text style={homeStyles.travelPostInfoText}>
+                    {post.participants} participants
+                  </Text>
+                </View>
+              </View>
+
+              {/* Tags */}
+              <View style={homeStyles.travelPostTags}>
+                {post.tags.map((tag: string) => (
+                  <View key={tag} style={homeStyles.travelPostTag}>
+                    <Text style={homeStyles.travelPostTagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Like & Share Actions */}
+              <View style={homeStyles.travelPostActions}>
+                <TouchableOpacity
+                  style={homeStyles.travelPostActionButton}
+                  onPress={() => handleLike(post.id)}
+                >
+                  <Heart
+                    color={likedPosts.has(post.id) ? "#ef4444" : "#6b7280"}
+                    fill={likedPosts.has(post.id) ? "#ef4444" : "none"}
+                    size={20}
+                  />
+                  <Text style={homeStyles.travelPostActionText}>
+                    {post.likes + (likedPosts.has(post.id) ? 1 : 0)}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={homeStyles.travelPostActionButton}>
+                  <Share2 color="#6b7280" size={20} />
+                  <Text style={homeStyles.travelPostActionText}>Share</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );

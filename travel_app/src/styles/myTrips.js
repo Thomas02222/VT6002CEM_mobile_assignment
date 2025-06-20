@@ -103,7 +103,12 @@ export const styles = StyleSheet.create({
     fontWeight: "500",
   },
   deleteButton: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   tripTitle: {
     fontSize: 20,
@@ -153,4 +158,22 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,255,255,0.8)",
   },
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  // 分享按鈕
+  shareButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 4,
+  },
+
+  // 修改現有的 deleteButton 樣式
 });
