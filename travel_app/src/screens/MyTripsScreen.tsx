@@ -8,8 +8,6 @@ import {
   Animated,
   RefreshControl,
   Alert,
-  Dimensions,
-  Share,
   ActionSheetIOS,
   Platform,
 } from "react-native";
@@ -56,30 +54,22 @@ const MyTripsScreen = () => {
   }, []);
 
   const loadTrips = () => {
-    const db = getDatabase();
     const userId = user?.uid;
-
     if (!userId) return;
 
-    const tripsRef = ref(db, `trips/${userId}`);
-
+    const tripsRef = ref(getDatabase(), `trips/${userId}`);
     onValue(tripsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const determineStatus = (createdAt: string): Trip["status"] => {
-          return "upcoming";
-        };
-
         const loadedTrips: Trip[] = Object.entries(data).map(
           ([tripId, trip]: any) => ({
             id: tripId,
             title: trip.title || "Untitled Trip",
             destinationCount: trip.places?.length || 0,
             imageUrl: "",
-            status: determineStatus(trip.createdAt),
+            status: "upcoming",
           })
         );
-
         setTrips(loadedTrips);
       } else {
         setTrips([]);
@@ -95,120 +85,79 @@ const MyTripsScreen = () => {
     }, 1000);
   };
 
-  const removeFromHomeScreen = (trip: Trip) => {
-    const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
-    update(tripRef, { isShared: null });
-  };
+  const getStatusColor = () => "#4CAF50";
+  const getStatusText = () => "Upcoming";
 
-  const getStatusColor = (status: Trip["status"]) => {
-    switch (status) {
-      case "upcoming":
-        return "#4CAF50";
-    }
-  };
-
-  const getStatusText = (status: Trip["status"]) => {
-    switch (status) {
-      case "upcoming":
-        return "Upcoming";
-      default:
-        return "";
-    }
-  };
-
-  // 分享行程功能
-  const handleShareTrip = async (trip: Trip) => {
-    try {
-      const shareMessage = `Check out my trip: ${trip.title}\n${trip.destinationCount} amazing locations to explore!\n\nPlanned with TripApp 🌎✈️`;
-      const shareUrl = `https://yourapp.com/trip/${trip.id}`; // 替換為你的 app deep link
-
-      if (Platform.OS === "ios") {
-        // iOS ActionSheet 選項
-        const options = ["Copy Link", "Send to Home Screen", "Cancel"];
-
-        ActionSheetIOS.showActionSheetWithOptions(
-          {
-            options,
-            cancelButtonIndex: 3,
-            title: `Share "${trip.title}"`,
-            message: "Choose how you want to share this trip",
-          },
-          (buttonIndex) => {
-            switch (buttonIndex) {
-              case 0:
-                copyTripLink(shareUrl);
-                break;
-              case 1:
-                shareToHomeScreen(trip);
-                break;
-            }
+  const handleShareTrip = (trip: Trip) => {
+    const shareUrl = `https://yourapp.com/trip/${trip.id}`;
+    if (Platform.OS === "ios") {
+      const options = [
+        "Copy Link",
+        "Send to Home Screen",
+        "Edit & Share",
+        "Cancel",
+      ];
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: 3,
+          title: `Share "${trip.title}"`,
+        },
+        (buttonIndex) => {
+          switch (buttonIndex) {
+            case 0:
+              copyTripLink(shareUrl);
+              break;
+            case 1:
+              shareToHomeScreen(trip);
+              break;
+            case 2:
+              break;
           }
-        );
-      }
-    } catch (error) {
-      console.error("Share error:", error);
-      Alert.alert("Share Error", "Unable to share trip at this time.");
+        }
+      );
+    } else {
     }
   };
 
-  // 複製連結
   const copyTripLink = (url: string) => {
-    // 這裡需要使用 Clipboard API
-    // import { Clipboard } from '@react-native-clipboard/clipboard';
-    // Clipboard.setString(url);
-    Alert.alert("Link Copied", "Trip link has been copied to clipboard!");
+    Alert.alert("Link Copied", "Trip link copied to clipboard!");
   };
 
-  // 分享到主畫面 (建立快捷方式)
   const shareToHomeScreen = (trip: Trip) => {
     Alert.alert(
       "Add to Home Screen",
-      `Create a shortcut for "${trip.title}" on your home screen?`,
+      `Create a shortcut for "${trip.title}"?`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Add Shortcut",
-          onPress: () => createHomeScreenShortcut(trip),
-        },
-      ]
-    );
-  };
-
-  // 建立主畫面快捷方式
-  const createHomeScreenShortcut = (trip: Trip) => {
-    if (!user?.uid) return;
-
-    console.log("Sharing trip:", trip.title);
-    const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
-
-    update(tripRef, { isShared: true })
-      .then(() => {
-        Alert.alert(
-          "Trip Shared",
-          `"${trip.title}" has been shared to Home screen!`
-        );
-      })
-      .catch((error) => {
-        console.error("Failed to share trip:", error);
-        Alert.alert("Error", "Unable to share trip to home screen.");
-      });
-  };
-
-  const handleDeleteTrip = (tripId: string, tripTitle: string) => {
-    Alert.alert(
-      "Delete Trip",
-      `Are you sure you want to delete "${tripTitle}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
+          text: "Add",
           onPress: () => {
-            setTrips(trips.filter((trip) => trip.id !== tripId));
+            const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
+            update(tripRef, { isShared: true })
+              .then(() => {
+                Alert.alert("Shared", `"${trip.title}" shared successfully.`);
+              })
+              .catch(() => {
+                Alert.alert("Error", "Failed to share trip.");
+              });
           },
         },
       ]
     );
+  };
+
+  const handleDeleteTrip = (tripId: string, title: string) => {
+    Alert.alert("Delete Trip", `Are you sure you want to delete "${title}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          setTrips(trips.filter((t) => t.id !== tripId));
+        },
+      },
+    ]);
   };
 
   const renderEmptyState = () => (
@@ -216,99 +165,78 @@ const MyTripsScreen = () => {
       <Ionicons name="airplane-outline" size={80} color="#E0E0E0" />
       <Text style={styles.emptyTitle}>No trips yet</Text>
       <Text style={styles.emptySubtitle}>
-        Tap the + button in the top right to start planning your first journey!
+        Tap the + button to start planning!
       </Text>
     </View>
   );
 
-  const renderItem = ({ item, index }: { item: Trip; index: number }) => {
-    return (
-      <Animated.View
-        style={[
-          styles.tripCard,
-          {
-            opacity: fadeAnim,
-            transform: [
-              {
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [50, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.cardContent}
-          onPress={() => navigation.navigate("TripEditor", { tripId: item.id })}
-          activeOpacity={0.8}
+  const renderItem = ({ item }: { item: Trip }) => (
+    <Animated.View
+      style={[
+        styles.tripCard,
+        {
+          opacity: fadeAnim,
+          transform: [
+            {
+              translateY: fadeAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [50, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <TouchableOpacity style={styles.cardContent} activeOpacity={0.8}>
+        <LinearGradient
+          colors={["#667eea", "#764ba2"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.cardGradient}
         >
-          <LinearGradient
-            colors={["#667eea", "#764ba2"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.cardGradient}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.statusContainer}>
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: getStatusColor(item.status) },
-                  ]}
-                />
-                <Text style={styles.statusText}>
-                  {getStatusText(item.status)}
-                </Text>
-              </View>
-
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.shareButton}
-                  onPress={() => handleShareTrip(item)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name="share-outline"
-                    size={18}
-                    color="rgba(255,255,255,0.9)"
-                  />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDeleteTrip(item.id, item.title)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={18}
-                    color="rgba(255,255,255,0.7)"
-                  />
-                </TouchableOpacity>
-              </View>
+          <View style={styles.cardHeader}>
+            <View style={styles.statusContainer}>
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: getStatusColor() },
+                ]}
+              />
+              <Text style={styles.statusText}>{getStatusText()}</Text>
             </View>
-
-            <Text style={styles.tripTitle}>{item.title}</Text>
-
-            <View style={styles.tripStats}>
-              <View style={styles.statItem}>
-                <Ionicons name="location-outline" size={20} color="#FFD700" />
-                <Text style={styles.statNumber}>{item.destinationCount}</Text>
-                <Text style={styles.statLabel}>locations</Text>
-              </View>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={() => handleShareTrip(item)}
+              >
+                <Ionicons name="share-outline" size={18} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteTrip(item.id, item.title)}
+              >
+                <Ionicons name="trash-outline" size={18} color="white" />
+              </TouchableOpacity>
             </View>
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
+          </View>
+
+          <Text style={styles.tripTitle}>{item.title}</Text>
+
+          <View style={styles.tripStats}>
+            <View style={styles.statItem}>
+              <Ionicons name="location-outline" size={20} color="#FFD700" />
+              <Text style={styles.statNumber}>{item.destinationCount}</Text>
+              <Text style={styles.statLabel}>locations</Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#667eea" />
-
       <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>My Trips</Text>
@@ -321,7 +249,6 @@ const MyTripsScreen = () => {
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => navigation.navigate("TripEditor" as never)}
-          activeOpacity={0.8}
         >
           <LinearGradient
             colors={["#FF6B6B", "#FF8E53"]}
@@ -340,7 +267,6 @@ const MyTripsScreen = () => {
           styles.listContainer,
           trips.length === 0 && styles.emptyListContainer,
         ]}
-        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
