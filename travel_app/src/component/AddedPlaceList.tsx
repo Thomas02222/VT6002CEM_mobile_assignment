@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,14 +12,16 @@ import { Place } from "../types/place";
 
 interface Props {
   addedPlaces: Place[];
-  onUpdateNotes: (placeId: string, newNotes: string) => void;
-  onRemovePlace: (placeId: string) => void;
+  onUpdateNotes?: (placeId: string, newNotes: string) => void;
+  onRemovePlace?: (placeId: string) => void;
+  readOnly?: boolean;
 }
 
 const AddedPlaceList: React.FC<Props> = ({
   addedPlaces,
   onUpdateNotes,
   onRemovePlace,
+  readOnly = false,
 }) => {
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState<string>("");
@@ -31,7 +32,9 @@ const AddedPlaceList: React.FC<Props> = ({
   };
 
   const saveNotes = (placeId: string) => {
-    onUpdateNotes(placeId, tempNotes);
+    if (onUpdateNotes) {
+      onUpdateNotes(placeId, tempNotes);
+    }
     setEditingPlaceId(null);
     setTempNotes("");
   };
@@ -49,12 +52,17 @@ const AddedPlaceList: React.FC<Props> = ({
           <Text style={styles.emptySubtitle}>{item.description}</Text>
         </View>
 
-        <TouchableOpacity onPress={() => onRemovePlace(item.id)}>
-          <Ionicons name="trash" size={20} color={colors.danger} />
-        </TouchableOpacity>
+        {!readOnly && onRemovePlace && (
+          <TouchableOpacity onPress={() => onRemovePlace(item.id)}>
+            <Ionicons name="trash" size={20} color={colors.danger} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {editingPlaceId === item.id ? (
+      {readOnly ? (
+        // Display notes in read-only mode
+        <Text style={styles.notesInput}>{item.notes || "No notes."}</Text>
+      ) : editingPlaceId === item.id ? (
         <View style={styles.notesInputContainer}>
           <TextInput
             value={tempNotes}
