@@ -12,9 +12,10 @@ import {
   ScrollView,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import { loginStyles } from "../styles/login.js";
+import { loginStyles } from "../styles/login";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/navigation";
+import * as LocalAuthentication from "expo-local-authentication";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
@@ -26,16 +27,33 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("error", "please input all field");
+      Alert.alert("Error", "Please input all fields");
       return;
     }
 
     try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const supported = await LocalAuthentication.isEnrolledAsync();
+
+      if (!hasHardware || !supported) {
+        Alert.alert("Biometric not supported", "Please login manually.");
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Verify your identity",
+      });
+
+      if (!result.success) {
+        Alert.alert("Authentication Failed", "Fingerprint verification failed");
+        return;
+      }
+
       await login(email, password);
-      Alert.alert("sucess", "sucessfully login");
-      navigation.navigate("Tabs", { screen: "Home" }); 
+      Alert.alert("Success", "Successfully logged in");
+      navigation.navigate("Tabs", { screen: "Home" });
     } catch (error: any) {
-      Alert.alert("login fail", error.message);
+      Alert.alert("Login Failed", error.message);
     }
   };
 
@@ -49,14 +67,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={loginStyles.keyboardAvoidingView}
       >
-        <ScrollView
-          contentContainerStyle={loginStyles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={loginStyles.scrollContainer}>
           <View style={loginStyles.logoContainer}>
-            <View style={loginStyles.logoCircle}>
-              {/* <Text style={loginStyles.logoIcon}></Text> */}
-            </View>
             <Text style={loginStyles.logoText}>Welcome back</Text>
             <Text style={loginStyles.logoSubtext}>
               Please input your email and password
@@ -66,68 +78,54 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           <View style={loginStyles.formContainer}>
             <Text style={loginStyles.formTitle}>Login</Text>
 
-            {/* Email input */}
             <View style={loginStyles.inputContainer}>
-              <Text style={loginStyles.inputLabel}>email</Text>
+              <Text style={loginStyles.inputLabel}>Email</Text>
               <TextInput
                 style={loginStyles.input}
-                placeholder="Please input your email"
+                placeholder="Enter your email"
                 placeholderTextColor="#999"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
               />
             </View>
 
-            {/* Password input */}
             <View style={loginStyles.inputContainer}>
-              <Text style={loginStyles.inputLabel}>password</Text>
+              <Text style={loginStyles.inputLabel}>Password</Text>
               <View style={loginStyles.passwordContainer}>
                 <TextInput
                   style={loginStyles.passwordInput}
-                  placeholder="Please input your password"
+                  placeholder="Enter your password"
                   placeholderTextColor="#999"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!isPasswordVisible}
                   autoCapitalize="none"
-                  autoCorrect={false}
                 />
                 <TouchableOpacity
                   style={loginStyles.eyeIcon}
                   onPress={() => setIsPasswordVisible(!isPasswordVisible)}
                 >
                   <Text style={loginStyles.eyeText}>
-                    {/* {isPasswordVisible ?} */}
+                    {isPasswordVisible ? "Hide" : "Show"}
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* forget password button */}
-            <TouchableOpacity style={loginStyles.forgotPassword}>
-              <Text style={loginStyles.forgotPasswordText}>
-                forget password？
-              </Text>
-            </TouchableOpacity>
-
-            {/* login button */}
             <TouchableOpacity
               style={loginStyles.loginButton}
               onPress={handleLogin}
-              activeOpacity={0.8}
             >
-              <Text style={loginStyles.loginButtonText}>login</Text>
+              <Text style={loginStyles.loginButtonText}>Login</Text>
             </TouchableOpacity>
           </View>
 
-          {/* register */}
           <View style={loginStyles.registerContainer}>
-            <Text style={loginStyles.registerText}>no account? </Text>
+            <Text style={loginStyles.registerText}>No account?</Text>
             <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text style={loginStyles.registerLink}>create account</Text>
+              <Text style={loginStyles.registerLink}>Create account</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

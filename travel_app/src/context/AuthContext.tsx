@@ -6,13 +6,30 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
+  User,
 } from "firebase/auth";
 import { auth } from "../firebase/firebase";
+import * as SecureStore from "expo-secure-store";
+import * as LocalAuthentication from "expo-local-authentication";
+import { Alert } from "react-native";
 
-const AuthContext = createContext<any>(null);
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ) => Promise<void>;
+  biometricLogin: () => Promise<boolean>;
+}
+
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -21,8 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  const login = (email: string, password: string) => {
-    return signInWithEmailAndPassword(auth, email, password);
+  const login = async (email: string, password: string) => {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    setUser(result.user);
+
+
+    await SecureStore.setItemAsync("savedEmail", email);
+    await SecureStore.setItemAsync("savedPassword", password);
   };
 
   const logout = () => {
@@ -44,10 +66,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       displayName: `${firstName} ${lastName}`,
     });
     setUser(userCredential.user);
+
+    await SecureStore.setItemAsync("savedEmail", email);
+    await SecureStore.setItemAsync("savedPassword", password);
+  };
+
+  const biometricLogin = async (): Promise<boolean> => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    const supported = await LocalAuthentication.isEnrolledAsync();
+
+    if (!hasHardware || !supported) return false;
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: "Authenticate to login",
+    });
+
+    if (!result.success) return false;
+
+    const email = await SecureStore.getItemAsync("savedEmail");
+    const password = await SecureStore.getItemAsync("savedPassword");
+
+    if (email && password) {
+      try {
+        await login(email, password);
+        return true;
+      } catch (error) {
+        Alert.alert(
+          "Biometric login failed",
+          "Stored credentials are invalid."
+        );
+        return false;
+      }
+    }
+
+    return false;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, register, biometricLogin }}
+    >
       {children}
     </AuthContext.Provider>
   );
