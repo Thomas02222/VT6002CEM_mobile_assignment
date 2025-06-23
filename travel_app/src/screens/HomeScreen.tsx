@@ -19,38 +19,14 @@ import {
   Cloud,
   Sun,
   CloudRain,
+  Thermometer,
 } from "lucide-react-native";
-import { ref, onValue } from "firebase/database";
+import { ref, get } from "firebase/database";
 import { db } from "../firebase/firebase";
 import { homeStyles } from "../styles/home";
-import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../types/navigation";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-
-interface Author {
-  name: string;
-  avatar: string;
-}
-
-interface SharedTrip {
-  id: string;
-  title: string;
-  tags: string[];
-  userId: string;
-  author: Author;
-  timeAgo?: string;
-  destination?: string;
-  duration?: string;
-  budget?: string;
-  participants?: number;
-  likes?: number;
-  description?: string;
-}
 
 const TravelHomeScreen = () => {
-  const navigation = useNavigation<TravelHomeScreenNavigationProp>();
-
-  const [sharedTrips, setSharedTrips] = useState<SharedTrip[]>([]);
+  const [sharedTrips, setSharedTrips] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(
     new Set()
@@ -59,11 +35,6 @@ const TravelHomeScreen = () => {
   const [weather, setWeather] = useState<any>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [location, setLocation] = useState("Taipei, Taiwan");
-
-  type TravelHomeScreenNavigationProp = NativeStackNavigationProp<
-    RootStackParamList,
-    "TripView"
-  >;
 
   const user = {
     name: "Guest",
@@ -81,7 +52,7 @@ const TravelHomeScreen = () => {
 
     const fetchWeather = async () => {
       try {
-        const data = await getWeather(22.31, 114.16);
+        const data = await getWeather(25.03, 121.56); 
         setWeather(data);
       } catch (error) {
         console.error("Fetch weather failed:", error);
@@ -107,56 +78,67 @@ const TravelHomeScreen = () => {
     }
   };
 
-  useEffect(() => {
-    const sharedRef = ref(db, "sharedTrips");
-    const unsubscribe = onValue(sharedRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const trips = Object.entries(data).map(([id, trip]: any) => ({
-          id,
-          title: trip.title || "Untitled Trip",
-          tags: trip.tags || ["Travel", "Shared"],
-          userId: trip.userId,
-          author: {
-            name: trip.author?.name || "Anonymous",
-            avatar:
-              trip.author?.avatar ||
-              `https://i.pravatar.cc/100?u=${trip.userId}`,
-          },
-          timeAgo: trip.timeAgo || "",
-          destination: trip.destination || "",
-          duration: trip.duration || "",
-          budget: trip.budget || "",
-          participants: trip.participants || 0,
-          likes: trip.likes || 0,
-          description: trip.description || "",
-        }));
-        setSharedTrips(trips);
-      } else {
-        setSharedTrips([]);
-      }
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
+  useEffect(() => {
+    const fetchSharedTrips = async () => {
+      try {
+        const tripsRef = ref(db, "trips");
+        const snapshot = await get(tripsRef);
+
+        const results: any[] = [];
+
+        if (snapshot.exists()) {
+          const allTrips = snapshot.val();
+          for (const userId in allTrips) {
+            for (const tripId in allTrips[userId]) {
+              const trip = allTrips[userId][tripId];
+              if (trip.isShared) {
+                results.push({
+                  id: tripId,
+                  ...trip,
+                  author: {
+                    name: userId,
+                    avatar: "https://i.pravatar.cc/100?u=" + userId,
+                  },
+                  timeAgo: "just now",
+                  destination: trip.title,
+                  title: trip.title,
+                  description:
+                    trip.places?.[0]?.description || "A shared trip plan.",
+                  image:
+                    "https://source.unsplash.com/400x300/?" +
+                    encodeURIComponent(trip.title),
+                  duration: `${trip.places?.length || 1} stops`,
+                  budget: "Flexible",
+                  participants: Math.floor(Math.random() * 5) + 1,
+                  tags: ["shared", "travel"],
+                  likes: Math.floor(Math.random() * 100),
+                });
+              }
+            }
+          }
+          setSharedTrips(results.reverse());
+        }
+      } catch (error) {
+        console.error("Failed to fetch shared trips:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSharedTrips();
   }, []);
 
   const handleLike = (postId: string) => {
-    setLikedPosts((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(postId)) updated.delete(postId);
-      else updated.add(postId);
-      return updated;
-    });
+    const updated = new Set(likedPosts);
+    updated.has(postId) ? updated.delete(postId) : updated.add(postId);
+    setLikedPosts(updated);
   };
 
   const handleBookmark = (postId: string) => {
-    setBookmarkedPosts((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(postId)) updated.delete(postId);
-      else updated.add(postId);
-      return updated;
-    });
+    const updated = new Set(bookmarkedPosts);
+    updated.has(postId) ? updated.delete(postId) : updated.add(postId);
+    setBookmarkedPosts(updated);
   };
 
   return (
@@ -260,16 +242,7 @@ const TravelHomeScreen = () => {
           </Text>
         ) : (
           sharedTrips.map((post) => (
-            <TouchableOpacity
-              key={post.id}
-              style={homeStyles.travelPostCard}
-              onPress={() =>
-                navigation.navigate("TripView", {
-                  tripId: post.id,
-                  userId: post.userId,
-                })
-              }
-            >
+            <View key={post.id} style={homeStyles.travelPostCard}>
               {/* Post Header */}
               <View style={homeStyles.travelPostHeader}>
                 <Image
@@ -302,6 +275,10 @@ const TravelHomeScreen = () => {
               <Text style={homeStyles.travelPostDescription}>
                 {post.description}
               </Text>
+              <Image
+                source={{ uri: post.image }}
+                style={homeStyles.travelPostImage}
+              />
 
               {/* Info Row */}
               <View style={homeStyles.travelPostInfoRow}>
@@ -345,13 +322,16 @@ const TravelHomeScreen = () => {
                     fill={likedPosts.has(post.id) ? "#ef4444" : "none"}
                     size={20}
                   />
+                  <Text style={homeStyles.travelPostActionText}>
+                    {post.likes + (likedPosts.has(post.id) ? 1 : 0)}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={homeStyles.travelPostActionButton}>
                   <Share2 color="#6b7280" size={20} />
                   <Text style={homeStyles.travelPostActionText}>Share</Text>
                 </TouchableOpacity>
               </View>
-            </TouchableOpacity>
+            </View>
           ))
         )}
       </ScrollView>

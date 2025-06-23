@@ -5,7 +5,6 @@ import TabNavigator from "./TabNavigator";
 import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import { RootStackParamList } from "../types/navigation";
 import TripEditorScreen from "../screens/TripEditorScreen";
-import TripViewScreen from "../screens/TripViewScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,11 +25,6 @@ const MainStackNavigator = () => {
         name="TripEditor"
         component={TripEditorScreen}
         options={{ title: "Edit Trip" }}
-      />
-      <Stack.Screen
-        name="TripView"
-        component={TripViewScreen}
-        options={{ title: "View Trip" }}
       />
     </Stack.Navigator>
   );

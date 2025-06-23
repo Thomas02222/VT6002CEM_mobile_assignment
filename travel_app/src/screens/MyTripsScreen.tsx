@@ -26,7 +26,6 @@ import {
 } from "firebase/database";
 import { db } from "../firebase/firebase";
 import { useAuth } from "../context/AuthContext";
-import { set } from "firebase/database";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MyTrips">;
 
@@ -134,19 +133,8 @@ const MyTripsScreen = () => {
         {
           text: "Add",
           onPress: () => {
-            const userId = user?.uid;
-            const tripRef = dbRef(db, `trips/${userId}/${trip.id}`);
-            const sharedRef = dbRef(db, `sharedTrips/${trip.id}`);
-
-            update(tripRef, { isShared: true });
-
-            set(sharedRef, {
-              userId,
-              tripId: trip.id,
-              title: trip.title,
-              destinationCount: trip.destinationCount,
-              timestamp: Date.now(),
-            })
+            const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
+            update(tripRef, { isShared: true })
               .then(() => {
                 Alert.alert("Shared", `"${trip.title}" shared successfully.`);
               })

@@ -7,5 +7,4 @@ export type RootStackParamList = {
   PlaceDetail: { location_id: string };
   MyTrips: undefined;
   TripEditor: { tripId?: string | undefined };
-  TripView: { tripId: string; userId: string };
 };
