@@ -28,7 +28,7 @@ import {
 } from "firebase/database";
 import { db } from "../firebase/firebase";
 import { useAuth } from "../context/AuthContext";
-
+import { set } from "firebase/database";
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "MyTrips">;
 
 interface Trip {
@@ -95,11 +95,6 @@ const MyTripsScreen = () => {
     }, 1000);
   };
 
-  const removeFromHomeScreen = (trip: Trip) => {
-    const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
-    update(tripRef, { isShared: null });
-  };
-
   const getStatusColor = (status: Trip["status"]) => {
     switch (status) {
       case "upcoming":
@@ -119,11 +114,10 @@ const MyTripsScreen = () => {
   // 分享行程功能
   const handleShareTrip = async (trip: Trip) => {
     try {
-      const shareMessage = `Check out my trip: ${trip.title}\n${trip.destinationCount} amazing locations to explore!\n\nPlanned with TripApp 🌎✈️`;
-      const shareUrl = `https://yourapp.com/trip/${trip.id}`; // 替換為你的 app deep link
+      const shareMessage = `Check out my trip: ${trip.title}\n${trip.destinationCount} amazing locations to explore!\n\nPlanned with TripApp `;
+      const shareUrl = `https://yourapp.com/trip/${trip.id}`;
 
       if (Platform.OS === "ios") {
-        // iOS ActionSheet 選項
         const options = ["Copy Link", "Send to Home Screen", "Cancel"];
 
         ActionSheetIOS.showActionSheetWithOptions(
@@ -151,47 +145,42 @@ const MyTripsScreen = () => {
     }
   };
 
-  // 複製連結
   const copyTripLink = (url: string) => {
-    // 這裡需要使用 Clipboard API
-    // import { Clipboard } from '@react-native-clipboard/clipboard';
-    // Clipboard.setString(url);
     Alert.alert("Link Copied", "Trip link has been copied to clipboard!");
   };
 
-  // 分享到主畫面 (建立快捷方式)
   const shareToHomeScreen = (trip: Trip) => {
     Alert.alert(
       "Add to Home Screen",
-      `Create a shortcut for "${trip.title}" on your home screen?`,
+      `Create a shortcut for "${trip.title}"?`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Add Shortcut",
-          onPress: () => createHomeScreenShortcut(trip),
+          text: "Add",
+          onPress: () => {
+            const userId = user?.uid;
+            const tripRef = dbRef(db, `trips/${userId}/${trip.id}`);
+            const sharedRef = dbRef(db, `sharedTrips/${trip.id}`);
+
+            update(tripRef, { isShared: true });
+
+            set(sharedRef, {
+              userId,
+              tripId: trip.id,
+              title: trip.title,
+              destinationCount: trip.destinationCount,
+              timestamp: Date.now(),
+            })
+              .then(() => {
+                Alert.alert("Shared", `"${trip.title}" shared successfully.`);
+              })
+              .catch(() => {
+                Alert.alert("Error", "Failed to share trip.");
+              });
+          },
         },
       ]
     );
-  };
-
-  // 建立主畫面快捷方式
-  const createHomeScreenShortcut = (trip: Trip) => {
-    if (!user?.uid) return;
-
-    console.log("Sharing trip:", trip.title);
-    const tripRef = dbRef(db, `trips/${user.uid}/${trip.id}`);
-
-    update(tripRef, { isShared: true })
-      .then(() => {
-        Alert.alert(
-          "Trip Shared",
-          `"${trip.title}" has been shared to Home screen!`
-        );
-      })
-      .catch((error) => {
-        console.error("Failed to share trip:", error);
-        Alert.alert("Error", "Unable to share trip to home screen.");
-      });
   };
 
   const handleDeleteTrip = (tripId: string, tripTitle: string) => {

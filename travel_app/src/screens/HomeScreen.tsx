@@ -21,11 +21,17 @@ import {
   CloudRain,
   Thermometer,
 } from "lucide-react-native";
-import { ref, get } from "firebase/database";
+import { ref, get, onValue } from "firebase/database";
 import { db } from "../firebase/firebase";
 import { homeStyles } from "../styles/home";
+import { RootStackParamList } from "../types/navigation"; 
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
 
 const TravelHomeScreen = () => {
+  const navigation =
+  useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [sharedTrips, setSharedTrips] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(
@@ -52,7 +58,7 @@ const TravelHomeScreen = () => {
 
     const fetchWeather = async () => {
       try {
-        const data = await getWeather(25.03, 121.56); 
+        const data = await getWeather(25.03, 121.56);
         setWeather(data);
       } catch (error) {
         console.error("Fetch weather failed:", error);
@@ -78,55 +84,39 @@ const TravelHomeScreen = () => {
     }
   };
 
-
   useEffect(() => {
-    const fetchSharedTrips = async () => {
-      try {
-        const tripsRef = ref(db, "trips");
-        const snapshot = await get(tripsRef);
+    const sharedRef = ref(db, "sharedTrips");
+    onValue(sharedRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const sharedTrips = Object.entries(data).map(([id, trip]: any) => ({
+          id,
+          title: trip.title || "Untitled Trip",
+          destination: trip.destination || "Unknown Destination",
+          description: trip.description || "No description provided.",
+          image: trip.image || "https://source.unsplash.com/400x300/?travel",
+          duration: trip.duration || "3 days",
+          budget: trip.budget || "Unknown",
+          participants: trip.participants || 1,
+          tags: trip.tags || ["Travel", "Shared"],
 
-        const results: any[] = [];
+          likes: trip.likes || 0,
+          timeAgo: "just now",
+          userId: trip.userId,
 
-        if (snapshot.exists()) {
-          const allTrips = snapshot.val();
-          for (const userId in allTrips) {
-            for (const tripId in allTrips[userId]) {
-              const trip = allTrips[userId][tripId];
-              if (trip.isShared) {
-                results.push({
-                  id: tripId,
-                  ...trip,
-                  author: {
-                    name: userId,
-                    avatar: "https://i.pravatar.cc/100?u=" + userId,
-                  },
-                  timeAgo: "just now",
-                  destination: trip.title,
-                  title: trip.title,
-                  description:
-                    trip.places?.[0]?.description || "A shared trip plan.",
-                  image:
-                    "https://source.unsplash.com/400x300/?" +
-                    encodeURIComponent(trip.title),
-                  duration: `${trip.places?.length || 1} stops`,
-                  budget: "Flexible",
-                  participants: Math.floor(Math.random() * 5) + 1,
-                  tags: ["shared", "travel"],
-                  likes: Math.floor(Math.random() * 100),
-                });
-              }
-            }
-          }
-          setSharedTrips(results.reverse());
-        }
-      } catch (error) {
-        console.error("Failed to fetch shared trips:", error);
-      } finally {
-        setLoading(false);
+          author: {
+            name: trip.author?.name || "Anonymous",
+            avatar:
+              trip.author?.avatar ||
+              `https://i.pravatar.cc/100?u=${trip.userId}`,
+          },
+        }));
+        setSharedTrips(sharedTrips);
+      } else {
+        setSharedTrips([]);
       }
-    };
-
-    fetchSharedTrips();
+      setLoading(false);
+    });
   }, []);
 
   const handleLike = (postId: string) => {
@@ -242,7 +232,16 @@ const TravelHomeScreen = () => {
           </Text>
         ) : (
           sharedTrips.map((post) => (
-            <View key={post.id} style={homeStyles.travelPostCard}>
+            <TouchableOpacity
+              key={post.id}
+              style={homeStyles.travelPostCard}
+              onPress={() =>
+                navigation.navigate("TripView", {
+                  tripId: post.id,
+                  userId: post.userId, // 🟡 一定要帶分享者 userId
+                })
+              }
+            >
               {/* Post Header */}
               <View style={homeStyles.travelPostHeader}>
                 <Image
@@ -250,58 +249,22 @@ const TravelHomeScreen = () => {
                   style={homeStyles.travelPostAvatar}
                 />
                 <View style={{ marginLeft: 10, flex: 1 }}>
-                  <Text style={homeStyles.travelPostAuthor}>
-                    {post.author.name}
-                  </Text>
+                  <Text style={homeStyles.travelPostAuthor}>{post.author.name}</Text>
                   <Text style={homeStyles.travelPostTime}>{post.timeAgo}</Text>
                 </View>
-                <TouchableOpacity
-                  onPress={() => handleBookmark(post.id)}
-                  style={homeStyles.travelPostBookmark}
-                >
-                  <Bookmark
-                    color={bookmarkedPosts.has(post.id) ? "#2563eb" : "#6b7280"}
-                    fill={bookmarkedPosts.has(post.id) ? "#2563eb" : "none"}
-                    size={20}
-                  />
-                </TouchableOpacity>
               </View>
-
+          
               {/* Post Content */}
-              <Text style={homeStyles.travelPostDestination}>
-                {post.destination}
-              </Text>
+              <Text style={homeStyles.travelPostDestination}>{post.destination}</Text>
               <Text style={homeStyles.travelPostTitle}>{post.title}</Text>
-              <Text style={homeStyles.travelPostDescription}>
-                {post.description}
-              </Text>
-              <Image
-                source={{ uri: post.image }}
-                style={homeStyles.travelPostImage}
-              />
-
+              <Text style={homeStyles.travelPostDescription}>{post.description}</Text>
+              <Image source={{ uri: post.image }} style={homeStyles.travelPostImage} />
+          
               {/* Info Row */}
               <View style={homeStyles.travelPostInfoRow}>
-                <View style={homeStyles.travelPostInfoItem}>
-                  <Calendar color="#6b7280" size={16} />
-                  <Text style={homeStyles.travelPostInfoText}>
-                    {post.duration}
-                  </Text>
-                </View>
-                <View style={homeStyles.travelPostInfoItem}>
-                  <MapPin color="#6b7280" size={16} />
-                  <Text style={homeStyles.travelPostInfoText}>
-                    {post.budget}
-                  </Text>
-                </View>
-                <View style={homeStyles.travelPostInfoItem}>
-                  <Users color="#6b7280" size={16} />
-                  <Text style={homeStyles.travelPostInfoText}>
-                    {post.participants} participants
-                  </Text>
-                </View>
+                {/* ... your info rows like Calendar, MapPin, etc ... */}
               </View>
-
+          
               {/* Tags */}
               <View style={homeStyles.travelPostTags}>
                 {post.tags.map((tag: string) => (
@@ -310,7 +273,7 @@ const TravelHomeScreen = () => {
                   </View>
                 ))}
               </View>
-
+          
               {/* Like & Share Actions */}
               <View style={homeStyles.travelPostActions}>
                 <TouchableOpacity
@@ -331,7 +294,7 @@ const TravelHomeScreen = () => {
                   <Text style={homeStyles.travelPostActionText}>Share</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
