@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import TabNavigator from "./TabNavigator";
 import PlaceDetailScreen from "../screens/PlaceDetailScreen";
 import { RootStackParamList } from "../types/navigation";
-import TripEditorScreen from "../screens/TripEditorScreen2";
+import TripEditorScreen from "../screens/TripEditorScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

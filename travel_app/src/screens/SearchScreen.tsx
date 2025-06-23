@@ -38,6 +38,15 @@ const SearchScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  let searchTimeout: NodeJS.Timeout;
+
+  const handleDebouncedSearch = () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      handleSearch();
+    }, 500);
+  };
+
   const handleSearch = async () => {
     if (!query.trim()) {
       Alert.alert("Reminder", "Please input keyword");
@@ -64,7 +73,7 @@ const SearchScreen = () => {
       }
 
       const json = await response.json();
-     // console.log("TripAdvisor proxy response:", json);
+      // console.log("TripAdvisor proxy response:", json);
       setResults(json.data ?? []);
     } catch (err: any) {
       setError(err.message);
@@ -154,7 +163,10 @@ const SearchScreen = () => {
           <TextInput
             placeholder="Search Attraction or location"
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(text) => {
+              setQuery(text);
+              handleDebouncedSearch();
+            }}
             style={styles.searchInput}
             returnKeyType="search"
             onSubmitEditing={handleSearch}
