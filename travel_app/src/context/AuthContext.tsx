@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     await SecureStore.setItemAsync("savedEmail", email);
     await SecureStore.setItemAsync("savedPassword", password);
+    await signOut(auth);
   };
 
   const biometricLogin = async (): Promise<boolean> => {

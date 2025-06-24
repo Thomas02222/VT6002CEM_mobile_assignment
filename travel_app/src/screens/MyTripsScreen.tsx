@@ -111,7 +111,7 @@ const MyTripsScreen = () => {
     }
   };
 
-  // 分享行程功能
+
   const handleShareTrip = async (trip: Trip) => {
     try {
       const shareMessage = `Check out my trip: ${trip.title}\n${trip.destinationCount} amazing locations to explore!\n\nPlanned with TripApp `;
@@ -159,6 +159,8 @@ const MyTripsScreen = () => {
           text: "Add",
           onPress: () => {
             const userId = user?.uid;
+            if (!userId) return;
+
             const tripRef = dbRef(db, `trips/${userId}/${trip.id}`);
             const sharedRef = dbRef(db, `sharedTrips/${trip.id}`);
 
@@ -173,6 +175,10 @@ const MyTripsScreen = () => {
             })
               .then(() => {
                 Alert.alert("Shared", `"${trip.title}" shared successfully.`);
+                navigation.navigate("TripView", {
+                  tripId: trip.id,
+                  userId,
+                });
               })
               .catch(() => {
                 Alert.alert("Error", "Failed to share trip.");

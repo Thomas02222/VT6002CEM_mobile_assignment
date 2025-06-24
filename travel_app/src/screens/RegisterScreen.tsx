@@ -107,7 +107,6 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           {/* Header */}
           <View style={registerStyles.headerContainer}>
             <View style={registerStyles.logoCircle}>
-              <Text style={registerStyles.logoIcon}>👤</Text>
             </View>
             <Text style={registerStyles.headerTitle}>Create Account</Text>
             <Text style={registerStyles.headerSubtext}>
@@ -217,37 +216,14 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
 
-            {/* Terms and Conditions */}
-            <View style={registerStyles.termsContainer}>
-              <TouchableOpacity
-                style={registerStyles.checkbox}
-                onPress={() => setAgreedToTerms(!agreedToTerms)}
-              >
-                <Text style={registerStyles.checkboxText}>
-                  {agreedToTerms ? "✓" : ""}
-                </Text>
-              </TouchableOpacity>
-              <View style={registerStyles.termsTextContainer}>
-                <Text style={registerStyles.termsText}>
-                  I agree to the{" "}
-                  <Text style={registerStyles.termsLink}>
-                    Terms and Conditions
-                  </Text>{" "}
-                  and{" "}
-                  <Text style={registerStyles.termsLink}>Privacy Policy</Text>
-                </Text>
-              </View>
-            </View>
 
             {/* Register Button */}
             <TouchableOpacity
               style={[
                 registerStyles.registerButton,
-                !agreedToTerms && registerStyles.disabledButton,
               ]}
               onPress={handleRegister}
               activeOpacity={0.8}
-              disabled={!agreedToTerms}
             >
               <Text style={registerStyles.registerButtonText}>
                 Create Account

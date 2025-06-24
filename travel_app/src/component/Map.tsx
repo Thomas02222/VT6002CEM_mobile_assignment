@@ -31,8 +31,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const mapRef = useRef<MapView>(null);
   const [mapRegion, setMapRegion] = useState<Region>(
     initialRegion || {
-      latitude: 25.033,
-      longitude: 121.5654,
+      latitude: 22.2783,
+      longitude: 114.1747,
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
     }

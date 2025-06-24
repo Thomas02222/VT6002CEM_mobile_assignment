@@ -24,14 +24,13 @@ import {
 import { ref, get, onValue } from "firebase/database";
 import { db } from "../firebase/firebase";
 import { homeStyles } from "../styles/home";
-import { RootStackParamList } from "../types/navigation"; 
+import { RootStackParamList } from "../types/navigation";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-
 const TravelHomeScreen = () => {
   const navigation =
-  useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [sharedTrips, setSharedTrips] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(
@@ -40,7 +39,6 @@ const TravelHomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
-  const [location, setLocation] = useState("Taipei, Taiwan");
 
   const user = {
     name: "Guest",
@@ -168,7 +166,6 @@ const TravelHomeScreen = () => {
         <View style={homeStyles.weatherCard}>
           <View style={homeStyles.weatherHeader}>
             <MapPin color="#6b7280" size={16} />
-            <Text style={homeStyles.weatherLocation}>{location}</Text>
           </View>
 
           {weatherLoading ? (
@@ -238,7 +235,7 @@ const TravelHomeScreen = () => {
               onPress={() =>
                 navigation.navigate("TripView", {
                   tripId: post.id,
-                  userId: post.userId, // 🟡 一定要帶分享者 userId
+                  userId: post.userId,
                 })
               }
             >
@@ -249,22 +246,31 @@ const TravelHomeScreen = () => {
                   style={homeStyles.travelPostAvatar}
                 />
                 <View style={{ marginLeft: 10, flex: 1 }}>
-                  <Text style={homeStyles.travelPostAuthor}>{post.author.name}</Text>
+                  <Text style={homeStyles.travelPostAuthor}>
+                    {post.author.name}
+                  </Text>
                   <Text style={homeStyles.travelPostTime}>{post.timeAgo}</Text>
                 </View>
               </View>
-          
+
               {/* Post Content */}
-              <Text style={homeStyles.travelPostDestination}>{post.destination}</Text>
+              <Text style={homeStyles.travelPostDestination}>
+                {post.destination}
+              </Text>
               <Text style={homeStyles.travelPostTitle}>{post.title}</Text>
-              <Text style={homeStyles.travelPostDescription}>{post.description}</Text>
-              <Image source={{ uri: post.image }} style={homeStyles.travelPostImage} />
-          
+              <Text style={homeStyles.travelPostDescription}>
+                {post.description}
+              </Text>
+              <Image
+                source={{ uri: post.image }}
+                style={homeStyles.travelPostImage}
+              />
+
               {/* Info Row */}
               <View style={homeStyles.travelPostInfoRow}>
                 {/* ... your info rows like Calendar, MapPin, etc ... */}
               </View>
-          
+
               {/* Tags */}
               <View style={homeStyles.travelPostTags}>
                 {post.tags.map((tag: string) => (
@@ -273,7 +279,7 @@ const TravelHomeScreen = () => {
                   </View>
                 ))}
               </View>
-          
+
               {/* Like & Share Actions */}
               <View style={homeStyles.travelPostActions}>
                 <TouchableOpacity
