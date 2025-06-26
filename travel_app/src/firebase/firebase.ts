@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCygrTLqSL51NNItYoCr_L41nDIwEP7nKc",
+  apiKey: "",
   authDomain: "shapevt6002.firebaseapp.com",
   databaseURL:
     "https://shapevt6002-default-rtdb.asia-southeast1.firebasedatabase.app",

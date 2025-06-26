@@ -83,7 +83,7 @@ const TripEditorScreen: React.FC = () => {
       setIsSearching(true);
 
       const res = await fetch(
-        `http://192.168.1.4:4000/search?q=${encodeURIComponent(query)}`
+        `http://xxx.xxx.x.x:4000/search?q=${encodeURIComponent(query)}`
       );
       const data = await res.json();
 
@@ -96,7 +96,7 @@ const TripEditorScreen: React.FC = () => {
         data.data.map(async (item: any) => {
           try {
             const detailRes = await fetch(
-              `http://192.168.1.4:4000/detail?location_id=${item.location_id}`
+              `http://xxx.xxx.x.x:4000/detail?location_id=${item.location_id}`
             );
             const detailData = await detailRes.json();
 

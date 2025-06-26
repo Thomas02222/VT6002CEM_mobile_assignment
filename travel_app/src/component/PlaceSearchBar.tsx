@@ -31,7 +31,7 @@ const PlaceSearchBar: React.FC<Props> = ({ addedPlaces, setAddedPlaces }) => {
     try {
       setIsSearching(true);
       const res = await fetch(
-        `http://192.168.1.4:4000/search?q=${encodeURIComponent(query)}`
+        `http://xxx.xxx.x.x:4000/search?q=${encodeURIComponent(query)}`
       );
       const data = await res.json();
 

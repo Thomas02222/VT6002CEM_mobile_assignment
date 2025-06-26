@@ -4,8 +4,8 @@ const cors = require("cors");
 
 const app = express();
 const PORT = 4000;
-const TRIPADVISOR_API_KEY = "4169586991174E238B9BED9B40E44A41";
-const weather_API_KEY = "457b880d41e1ffa63e31e1611b16d65b";
+const TRIPADVISOR_API_KEY = "";
+const weather_API_KEY = "";
 
 app.use(cors());
 

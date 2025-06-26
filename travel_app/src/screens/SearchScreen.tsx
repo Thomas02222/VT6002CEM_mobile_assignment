@@ -59,7 +59,7 @@ const SearchScreen = () => {
 
     try {
       const response = await fetch(
-        `http://192.168.1.4:4000/search?q=${encodeURIComponent(query)}`,
+        `http://xxx.xxx.x.x:4000/search?q=${encodeURIComponent(query)}`,
         {
           method: "GET",
           headers: {

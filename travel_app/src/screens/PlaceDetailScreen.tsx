@@ -58,7 +58,7 @@ const PlaceDetailScreen = ({ route, navigation }: Props) => {
     const fetchDetail = async () => {
       try {
         const res = await fetch(
-          `http://192.168.1.4:4000/detail?location_id=${location_id}`
+          `http://xxx.xxx.x.x:4000/detail?location_id=${location_id}`
         );
         if (!res.ok) throw new Error("Failed to fetch detail");
 

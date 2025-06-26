@@ -48,7 +48,7 @@ const TravelHomeScreen = () => {
   useEffect(() => {
     const getWeather = async (lat: number, lon: number) => {
       const res = await fetch(
-        `http://192.168.1.4:4000/weather?lat=${lat}&lon=${lon}`
+        `http://xxx.xxx.x.x:4000/weather?lat=${lat}&lon=${lon}`
       );
       const data = await res.json();
       return data;

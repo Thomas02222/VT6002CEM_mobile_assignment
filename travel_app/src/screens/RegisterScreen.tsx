@@ -29,7 +29,6 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
     useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { register } = useAuth();
 
   const handleInputChange = (field: string, value: string) => {
@@ -57,10 +56,10 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       return false;
     }
 
-    if (!agreedToTerms) {
-      Alert.alert("Error", "Please agree to the Terms and Conditions");
-      return false;
-    }
+    // if (!agreedToTerms) {
+    //   Alert.alert("Error", "Please agree to the Terms and Conditions");
+    //   return false;
+    // }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -106,8 +105,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         >
           {/* Header */}
           <View style={registerStyles.headerContainer}>
-            <View style={registerStyles.logoCircle}>
-            </View>
+            <View style={registerStyles.logoCircle}></View>
             <Text style={registerStyles.headerTitle}>Create Account</Text>
             <Text style={registerStyles.headerSubtext}>
               Join us today and get started
@@ -180,9 +178,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                   style={registerStyles.eyeIcon}
                   onPress={() => setIsPasswordVisible(!isPasswordVisible)}
                 >
-                  <Text style={registerStyles.eyeText}>
-                    
-                  </Text>
+                  <Text style={registerStyles.eyeText}></Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -216,12 +212,9 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
 
-
             {/* Register Button */}
             <TouchableOpacity
-              style={[
-                registerStyles.registerButton,
-              ]}
+              style={[registerStyles.registerButton]}
               onPress={handleRegister}
               activeOpacity={0.8}
             >
